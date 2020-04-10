@@ -1,0 +1,128 @@
+# This is a file.
+
+Go의 select 구문
+
+#Bob Floyd
+
+* 기본 개념
+
+* select 구문
+
+동시성을 사용한 Go 프로그램에서 가장 중요한 요소이다.
+
+여러 채널을 함께 구성할 수 있는 방법을 제공한다.
+
+프로그램 안에서 여러 채널을 함께 묶는 곳에서 취소, 시간 초과, 대기 및 기본값과 같은 개념을 안전하게 채널에 도입할 수 있게 해준다.
+
+* 어떻게 생겼나?
+
+.code content/ex1.go /START/,/STOP/
+
+얼핏 switch 블록처럼 보인다. switch 블록과 마찬가지로 일련의 명령을 구분짓는 case문을 가지고 있다. 하지만 비슷한 점은 이게 전부다.
+
+switch 블록과 달리 case문이 순차적으로 테스트되지 않으며, 조건이 충족되지 않는다고 다음 조건으로 넘어가지도 않는다.
+
+* 어떻게 동작하나?
+
+select 블록은 *채널* 중 하나가 *준비* 됐는지 확인하기 위해 모든 채널의 읽기와 쓰기를 동시에 검사한다.
+
+준비된 채널이 없는 경우 select문은 전체가 중단되어 대기한다.
+
+채널들 중 하나가 준비되면 해당 연산이 진행되고 관련 구문들이 실행된다.
+
+*준비된* *채널* 이란?
+
+- 읽기의 경우, 채워지거나 *닫힌* 채널
+- 쓰기의 경우, 용량이 꽉 차있지 않은 채널
+
+* 다음 예제를 살펴보자
+
+.play content/ex2.go /START/,/STOP/
+
+방금 생성한 채널을 2초 동안 기다렸다가 닫는다.
+
+채널에서 무엇인가를 읽으려고 시도한다.
+
+무언가 일어나기를 기다리는 동안 대기하는 간단하고 효율적인 방법이다.
+
+* 몇 가지 의문점
+
+- 준비 된 채널이 여러 개인 경우는?
+- 어떠한 채널도 준비되지 않는다면?
+- 무언가 하고 싶지만 현재 준비된 채널이 없다면?
+
+* 준비 된 채널이 여러 개인 경우는?
+
+무슨 일이 일어나는지 한번 시도해보자!
+
+.play content/ex3.go /START/,/STOP/
+
+보다시피 1000번을 반복하면 select문의 절반은 c1에서 읽고, 절반은 c2에서 읽는다.
+
+Go의 런타임 case 구문의 집합에 대해 균일한 의사 무작위 선택을 수행한다. 이는 하나의 집합 내에 있는 case 구문들은 가각 다른 모든 구문과 *동일한* *확률* 로 선택된다는 의미이다.
+
+* 어떠한 채널도 준비되지 않는다면?
+
+모든 채널이 대기 중이지만 영원히 대기하는 것도 도움이 되지 않는다면, 시간 초과가 필요할 수 있다.
+
+.play content/ex4.go /START/,/STOP/
+
+이 case문은 nil 채널을 읽고 있기 때문에 대기 상태를 벗어날 수 없다.
+
+time.After 함수는 time.Duration 인수를 받아서, 사용자가 넘겨준 기간이 지난 후에 현재 시간을 보내는 채널을 리턴한다.
+
+* 무언가 하고 싶지만 현재 준비된 채널이 없다면?
+
+select는 모든 채널이 차단되어 대기하는 경우에 대비해 default 절을 허용한다.
+
+.play content/ex5.go /START/,/STOP/
+
+거의 즉시 default 문이 실행됐음을 알 수 있다. 이렇게 하면 기다리지 않고 select 블록을 빠져나올 수 있다.
+
+* default 절 예제
+
+일반적으로 default 절이 for-select 루프와 함께 사용되는 것을 볼 수 있다. 이렇게 하면 고루틴은 다른 고루틴이 결과를 보고하기를 기다리는 동안 작업을 진행 할 수 있다.
+
+.play content/ex6.go /START/,/STOP/
+
+* 빈 select
+
+case 절이 없는 빈 select 문이 있다. 형태는 다음과 같다.
+
+.code content/ex7.go  /START/,/STOP/
+
+이 구문은 단순하게 영원히 대기한다.
+
+* select 패턴
+
+* for-select 루프
+
+for-select 루프는 Go 프로그램에서 자주 볼 수 있다.
+
+.code content/forselect.go  /START1/,/STOP1/
+
+이 패턴이 나타날 수 있는 몇 가지 시나리오가 있다.
+
+* 반복 변수를 채널로 내보내기
+
+순회할 수 있는 것을 채널의 값으로 변환하려고 하는 경우가 종종 있다.
+
+.code content/forselect.go  /START2/,/STOP2/
+
+* 멈추기를 기다리면서 무한 루프
+
+select 구문을 가능한 짧게 유지한다.
+
+.code content/forselect.go  /START3/,/STOP3/
+
+select 구문의 default 절에 작업을 포함시킨다.
+
+.code content/forselect.go  /START4/,/STOP4/
+
+* 참고
+
+*Concurrency* *in* *Go* by Katherine Cox-Buday
+.link https://learning.oreilly.com/library/view/concurrency-in-go/9781491941294/
+
+Go Concurrency Patterns
+.link https://talks.golang.org/2012/concurrency.slide
