@@ -2,11 +2,12 @@
 
 Go의 select 구문
 
-#Bob Floyd
+Bob Floyd
+bob.floyd@kakaoenterprise.com
 
 * 기본 개념
 
-* select 구문
+* Select
 
 동시성을 사용한 Go 프로그램에서 가장 중요한 요소이다.
 
